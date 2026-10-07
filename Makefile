@@ -173,6 +173,16 @@ wrf : framework_only
 	if [ $(ESMF_COUPLING) -eq 1 ] ; then \
 	  ( cd main ; $(MAKE) RLFLAGS="$(RLFLAGS)" MODULE_DIRS="$(ALL_MODULES)" SOLVER=em em_wrf_SST_ESMF ) ; \
 	fi
+# P3 lookup tables are stored gzipped in run/ (the 3momI table exceeds GitHub's 100 MB file limit);
+# unzip any that are missing or older than their .gz file
+	@for f in p3_lookupTable_1.dat-v6.9-2momI p3_lookupTable_1.dat-v6.9-3momI \
+	          p3_lookupTable_2.dat-v6.2 p3_lookupTable_3.dat-v1.4 ; do \
+	  if [ \( ! -f run/$$f \) -o \( run/$$f.gz -nt run/$$f \) ] ; then \
+	    echo "Unzipping P3 lookup table run/$$f.gz" ; \
+	    gzip -dc run/$$f.gz > run/$$f.tmp && mv -f run/$$f.tmp run/$$f || \
+	      { /bin/rm -f run/$$f.tmp ; echo "Error unzipping P3 lookup table run/$$f.gz" ; exit 32 ; } ; \
+	  fi ; \
+	done
 	@echo "build started:   $(START_OF_COMPILE)"
 	@echo "build completed:" `date`
 
